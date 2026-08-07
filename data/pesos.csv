@@ -1,0 +1,60 @@
+Grupo,TipoElemento,Nuevo_Alta,Nuevo_Media-Alta,Nuevo_Media,Nuevo_Baja,Nuevo_Mínima,Modificado_Alta,Modificado_Media-Alta,Modificado_Media,Modificado_Baja,Modificado_Mínima
+Host,HOST: Programa,49,36,24,12,6,41,31,20,8,4
+Host,HOST: Transacción,49,36,24,12,6,41,31,20,8,4
+Host,HOST: Rutina,49,36,24,12,6,41,31,20,8,4
+Host,HOST: JCL,13,9,6,4,3,7,5,4,3,2
+Host,HOST: Editran,9,9,9,9,9,9,9,9,9,9
+Host,TABLA DB2/Oracle,33,29,24,16,8,25,21,16,8,4
+Windows,NEXPERT: Consulta,12,8,7,5,3,7,5,3,2,1
+Windows,NEXPERT: Mantenimiento,32,24,16,7,4,16,8,5,3,2
+Windows,NOTES: Formulario,41,38,35,30,25,11,8,6,2,1
+Windows,WINDOWS: Programa,49,36,24,12,6,41,31,20,8,4
+Java,V1: Backing bean,42,30,24,17,10,28,22,14,8,4
+Java,V0: Comando java,25,21,16,8,4,13,10,8,4,2
+Java,"V0: Comando java, con lógica de negocio simple",62,43,24,18,10,33,26,18,8,4
+Java,"V0: Comando java, con utilización de ejb",89,72,54,34,14,44,36,27,17,7
+Java,"V0: Complementos Web (HTML, CSS)",9,6,4,2,1,6,4,3,2,1
+Java,V1: EJB,48,36,24,18,10,30,25,15,8,4
+Java,V0: Otras clases Java,36,28,20,12,8,20,16,12,8,4
+Java,"V0,1 y 2: Javascript",20,15,12,8,5,8,6,4,2,1
+Java,V1: JPA de acceso a datos,20,15,12,8,6,12,8,6,4,2
+Java,V0: Packages SQL,25,17,8,3,2,13,9,4,2,1
+Java,V1 y 2: Proxy de CTG,2,2,2,2,2,2,2,2,2,2
+Java,"V0,1 y 2: Proxy Web Service",9,7,4,3,2,4,4,2,2,2
+Java,V0 y 1: Script,13,9,6,4,3,7,5,4,3,2
+Java,V0: SQLJ,15,11,6,3,2,8,5,3,1,1
+Java,TABLA: Vista BBDD,9,6,4,2,1,6,4,3,2,1
+Java,"V0,1 y 2: Web Service con exposición (SOA o REST)",28,22,14,8,4,9,6,4,3,2
+Java,V1 y 2: Web Service: Publicación en OSB,35,28,18,14,10,18,14,9,7,5
+Java,V1: XHTML,20,15,12,8,5,8,6,4,2,1
+Java,V0: XML + XSL,15,11,6,3,2,8,5,3,1,1
+Ambar,V2: Pantalla Angular simple,34,27,20,14,7,20,16,12,8,4
+Ambar,V2: Pantalla Angular consulta o formulario,56,45,34,22,11,33,27,20,13,6
+Ambar,V2: Pantalla Angular con integración con Appian,94,75,56,38,19,56,45,33,22,11
+Ambar,V1 y 2: Endpoint de Microservicio,122,98,73,49,25,73,58,43,29,15
+DataWareHouse,ETL,32,28,24,16,8,30,16,12,8,4
+DataWareHouse,BI/DWH: Tabla,8,6,5,3,2,4,3,2,1,1
+DataWareHouse,BI/DWH: Fichero ini,20,15,8,4,2,10,7,4,2,1
+DataWareHouse,BI: Informe,14,10,7,5,3,7,5,4,3,2
+DataWareHouse,BI/DWH: RPD: Fact,15,10,8,6,4,10,8,6,4,2
+DataWareHouse,BI/DWH: RPD: Dimensión,4,2,2,1,1,4,2,1,1,1
+DataWareHouse,BI/DWH: RPD: Jerarquía,6,4,3,2,1,4,2,1,1,1
+PIB,PIB: Ficheros de configuracion,13,9,6,4,3,7,5,3,2,1
+PIB,PIB: Tabla STG/ODS,10,8,5,4,4,8,6,4,2,2
+PIB,PIB: Tabla RWH/BWH,14,12,10,7,4,8,6,5,4,2
+PIB,PIB:  Regla de calidad,50,30,20,15,6,25,15,7,3,2
+PIB,PIB: Cargas Categorías y términos en el glosario,26,26,26,26,26,26,26,26,26,26
+PIB,PIB: Cargas de Políticas y reglas de gobernabilidad,6,6,6,6,6,6,6,6,6,6
+PIB,PIB: Asociación de términos con reglas de gobernabilidad,12,12,12,12,12,12,12,12,12,12
+PIB,PIB: Asociación de términos con activos de información,17,17,17,17,12,12,12,12,12,12
+PIB,PIB: Configuración del linaje,5,5,5,5,5,5,5,5,5,5
+SAP,SAP: Ampliaciones (Badis/Enhancement),40,32,24,16,8,32,24,16,8,4
+SAP,SAP: Componente WebUI/Aplicación BSP/Webdynpro,160,120,80,56,40,80,56,40,24,8
+SAP,SAP: Customizing Business Role,40,32,24,16,8,32,24,16,8,4
+SAP,SAP: Customizing Master Data ,40,32,24,16,8,32,24,16,8,4
+SAP,SAP: Customizing Transactional Data ,80,56,40,24,16,56,40,24,16,8
+SAP,SAP: Objeto de autorización / Roles,40,32,24,16,8,32,24,16,8,4
+SAP,SAP: Objeto del Diccionario,24,16,8,4,1,16,8,4,2,1
+SAP,SAP: Report,80,56,40,24,16,56,40,24,16,8
+SAP,SAP: Web Service,80,56,40,24,16,56,40,24,16,8
+SAP,SAP: Workflow,80,56,40,24,16,56,40,24,16,8

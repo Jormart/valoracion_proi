@@ -1,0 +1,9 @@
+Nombre,Descripción,TipoElemento,Complejidad,Variación,Requisitos,Funcional,Técnico,Construcción,Pruebas,Implantación,ClaveAgrupación,DescripciónAgrupación,Cantidad
+CYAD014,CADENA ALERTA NUEVA,HOST: JCL,Media-Alta,Elemento Nuevo,False,True,True,True,True,True,,,1
+CYTRFM71,INCLUIR NUEVO TIPO DE ALERTA,"V0,1 y 2: Web Service con exposición (SOA o REST)",Alta,Elemento Nuevo,False,False,False,True,True,True,,,1
+CYAD0140,SELECCIÓN DE RECEPTORES,HOST: Programa,Alta,Elemento Nuevo,False,True,True,True,True,True,,,1
+PMOD0337,MODIF. NUEVO FICHERO SALIDA,HOST: Programa,Media,Elemento Modificado,False,True,True,True,True,True,,,1
+CYAD0141,ENVIO DE LA ALERTA,HOST: Programa,Media,Elemento Nuevo,False,True,True,True,True,True,,,1
+ALPERS_ALERTA,SPUFI,TABLA DB2/Oracle,Baja,Elemento Modificado,False,True,True,True,True,True,,,1
+NDSDD650,MOD. CADENA ALERTAS,HOST: JCL,Media-Alta,Elemento Modificado,False,True,True,True,True,True,,,1
+PMOD336,MOD CADENA FICHERO ALERTAS,HOST: JCL,Media-Alta,Elemento Modificado,False,True,True,True,True,True,,,1
