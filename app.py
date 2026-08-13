@@ -118,13 +118,13 @@ tab_datos, tab_res, tab_etapas, tab_param, tab_tetapas, tab_timeline, tab_balanc
 
 
 with tab_datos:
-    st.subheader("Historias de usuario (Jira)")
+    st.subheader("Tareas de la Cadencia 6.x")
     st.caption(
-        "Cada fila es una historia de usuario / ticket de Jira. Marca con la casilla qué "
+        "Cada fila es una tarea de la Cadencia 6.x. Marca con la casilla qué "
         "etapas aplican (Funcional, Técnico, Construcción, Pruebas, Implantación) y asigna "
         "un Product Team. Para añadir tareas extra de testing (Análisis, Regresión, "
-        "Incidencias, Defects) ligadas a una historia, crea una fila nueva con el mismo "
-        "**ClaveAgrupación** que la historia principal — verás el total conjunto en la "
+        "Incidencias, Defects) ligadas a otra tarea, crea una fila nueva con el mismo "
+        "**ClaveAgrupación** que la tarea principal — verás el total conjunto en la "
         "pestaña Resultado."
     )
 
@@ -150,7 +150,7 @@ with tab_datos:
     st.divider()
     col_a, col_b = st.columns(2)
     with col_a:
-        subido = st.file_uploader("Cargar historias desde CSV / Excel", type=["csv", "xlsx", "xlsm"])
+        subido = st.file_uploader("Cargar tareas desde CSV / Excel", type=["csv", "xlsx", "xlsm"])
         if subido is not None:
             if subido.name.lower().endswith(".csv"):
                 nuevos = pd.read_csv(subido)
@@ -164,7 +164,7 @@ with tab_datos:
                 st.rerun()
     with col_b:
         st.download_button(
-            "Descargar plantilla de historias (CSV)",
+            "Descargar plantilla de tareas (CSV)",
             pd.DataFrame(columns=COLUMNAS_ELEMENTOS).to_csv(index=False).encode("utf-8-sig"),
             "plantilla_elementos.csv",
             "text/csv",
@@ -203,7 +203,7 @@ with cabecera:
 
 with tab_res:
     st.caption(
-        "Subtotal por grupo tecnológico, por Product Team y por historia — calculado a "
+        "Subtotal por grupo tecnológico, por Product Team y por tarea — calculado a "
         "partir de la misma tabla de detalle que la pestaña Etapas, así que ambas siempre cuadran."
     )
     izq, der = st.columns([1, 2])
@@ -239,18 +239,18 @@ with tab_res:
         if not por_equipo.empty:
             st.dataframe(por_equipo, hide_index=True, width="stretch")
         else:
-            st.info("Asigna un Product Team a las historias para ver este desglose.")
+            st.info("Asigna un Product Team a las tareas para ver este desglose.")
 
-        st.subheader("Por historia (ClaveAgrupación)")
-        st.caption("Historias con tareas extra de testing asociadas — total conjunto.")
+        st.subheader("Por tarea (ClaveAgrupación)")
+        st.caption("Tareas con subtareas de testing asociadas — total conjunto.")
         por_clave = resumen_por_clave(res)
         if not por_clave.empty:
             st.dataframe(por_clave, hide_index=True, width="stretch")
         else:
-            st.info("Ninguna historia tiene tareas extra ligadas por ClaveAgrupación todavía.")
+            st.info("Ninguna tarea tiene tareas extra ligadas por ClaveAgrupación todavía.")
 
     with der:
-        st.subheader("Detalle por historia")
+        st.subheader("Detalle por tarea")
         cols = [
             "Nombre",
             "TipoElemento",
@@ -298,7 +298,7 @@ with tab_etapas:
             f"→ debe coincidir con el Subtotal agrupaciones de Resultado (**{res.total_etapas:,.2f} h**)."
         )
     else:
-        st.info("Añade historias en la pestaña Datos de Entrada para ver el reparto por etapa.")
+        st.info("Añade tareas en la pestaña Datos de Entrada para ver el reparto por etapa.")
 
 
 with tab_param:
@@ -402,15 +402,15 @@ with tab_tetapas:
 
 with tab_timeline:
     st.caption(
-        "Timeline relativo: cada historia es una barra con sus etapas activas encadenadas "
+        "Timeline relativo: cada tarea es una barra con sus etapas activas encadenadas "
         "en secuencia (día 1, día 2...), a razón de las horas/día configuradas en la "
         "barra lateral. No representa fechas de calendario ni la contención de capacidad "
-        "entre historias de un mismo equipo — para eso, ver Balanceo de carga."
+        "entre tareas de un mismo equipo — para eso, ver Balanceo de carga."
     )
 
     timeline = construir_timeline(res, P)
     if timeline.empty:
-        st.info("Añade historias en Datos de Entrada para ver el timeline.")
+        st.info("Añade tareas en Datos de Entrada para ver el timeline.")
     else:
         equipos_disponibles = ["(todos)"] + sorted(timeline["ProductTeam"].dropna().unique().tolist())
         filtro_equipo = st.selectbox("Filtrar por Product Team", equipos_disponibles, key="filtro_timeline")
@@ -433,7 +433,7 @@ with tab_timeline:
                     scale=alt.Scale(domain=list(COLOR_ETAPA.keys()), range=list(COLOR_ETAPA.values())),
                 ),
                 tooltip=[
-                    alt.Tooltip("Etiqueta:N", title="Historia"),
+                    alt.Tooltip("Etiqueta:N", title="Tarea"),
                     alt.Tooltip("ProductTeam:N", title="Product Team"),
                     alt.Tooltip("Etapa:N"),
                     alt.Tooltip("Inicio:Q", format=".2f", title="Día inicio"),
@@ -449,7 +449,7 @@ with tab_timeline:
 
 with tab_balanceo:
     st.caption(
-        "Compara las horas esperadas de cada Product Team (según las historias que tiene "
+        "Compara las horas esperadas de cada Product Team (según las tareas que tiene "
         "asignadas) contra su capacidad real, calculada a partir de sus FTEs fijos y del "
         "buffer de imprevistos. Holgura negativa = desbordamiento."
     )

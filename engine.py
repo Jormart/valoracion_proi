@@ -15,8 +15,8 @@ El detalle (`Resultado.detalle`) es la única fuente de verdad: todas las vistas
 calculan a partir de las mismas filas ya redondeadas, así que sus totales
 siempre cuadran entre sí.
 
-Cada fila de entrada es una historia de usuario / ticket de Jira (o una tarea
-extra de testing ligada a una historia mediante ClaveAgrupación — ver
+Cada fila de entrada es una tarea de la Cadencia 6.x (o una tarea extra de
+testing ligada a otra tarea mediante ClaveAgrupación — ver
 `resumen_por_clave`). Puede pertenecer a un grupo tecnológico (Host, Java,
 Testing) y a un Product Team (PT1, PT3, PT6...), y tener marcadas varias
 etapas a la vez.
@@ -204,7 +204,7 @@ class Resultado:
 
 
 def calcular(elementos: pd.DataFrame, p: Parametros) -> Resultado:
-    """Calcula la valoración completa a partir de la lista de historias de usuario."""
+    """Calcula la valoración completa a partir de la lista de tareas de la Cadencia 6.x."""
     avisos: list[str] = []
     filas = []
 
@@ -317,9 +317,9 @@ def resumen_por_equipo(res: Resultado) -> pd.DataFrame:
 
 
 def resumen_por_clave(res: Resultado) -> pd.DataFrame:
-    """Agrupa filas que comparten ClaveAgrupación (p. ej. una historia de usuario y
+    """Agrupa filas que comparten ClaveAgrupación (p. ej. una tarea de la Cadencia 6.x y
     sus tareas extra de testing — Análisis, Regresión, Incidencias, Defects) para ver
-    el total real de esa historia."""
+    el total real de esa tarea."""
     columnas = ["ClaveAgrupación", "Elementos", "Horas"]
     if res.detalle.empty:
         return pd.DataFrame(columns=columnas)
