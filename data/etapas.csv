@@ -1,10 +1,4 @@
-Tamaño,Grupo,Funcional,Técnico,Construcción,Pruebas,Implantación
-PEQUEÑO,Host,0.1,0.15,0.4,0.15,0.03
-PEQUEÑO,Java,0.1,0.1,0.47,0.15,0.01
-PEQUEÑO,Testing,0.1,0.15,0.4,0.15,0.03
-MEDIANO,Host,0.11,0.14,0.4,0.15,0.03
-MEDIANO,Java,0.11,0.09,0.47,0.15,0.01
-MEDIANO,Testing,0.11,0.14,0.4,0.15,0.03
-GRANDE,Host,0.12,0.14,0.39,0.15,0.03
-GRANDE,Java,0.12,0.09,0.46,0.15,0.01
-GRANDE,Testing,0.12,0.14,0.39,0.15,0.03
+Grupo,Funcional,Técnico,Construcción,Pruebas,Implantación
+Host,0.1,0.15,0.4,0.15,0.03
+Java,0.1,0.1,0.47,0.15,0.01
+Testing,0.1,0.15,0.4,0.15,0.03

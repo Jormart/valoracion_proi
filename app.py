@@ -62,15 +62,6 @@ with st.sidebar:
     )
     P.desc_ajuste_manual = st.text_input("Descripción del ajuste", value=P.desc_ajuste_manual)
 
-    opciones_tamano = ["Automático"] + P.tamanos["Tamaño"].tolist()
-    sel = st.selectbox(
-        "Tamaño de proyecto",
-        opciones_tamano,
-        help="Determina qué bloque de la TABLA DE ETAPAS se aplica. "
-        "En automático se deduce del total de horas base.",
-    )
-    P.tamano_forzado = None if sel == "Automático" else sel
-
     st.divider()
     st.caption("📅 Capacidad y jornada (usadas en Timeline y Balanceo de carga)")
     P.horas_semana = st.number_input("Horas/semana por FTE", value=float(P.horas_semana), step=0.5)
@@ -179,12 +170,11 @@ cuadre = verificar_cuadre(res)
 with cabecera:
     st.title("🧮 Valoración PROI")
 
-    c1, c2, c3, c4, c5 = st.columns(5)
+    c1, c2, c3, c4 = st.columns(4)
     c1.metric("Total proyecto (h)", f"{res.total_proyecto:,.2f}")
     c2.metric("Total agrupaciones (h)", f"{res.total_etapas:,.2f}")
     c3.metric("Ajuste complejidad (h)", f"{res.ajuste_complejidad:,.2f}", f"{res.factor_volumen:.0%}")
     c4.metric("Ajuste manual (h)", f"{res.ajuste_manual:,.2f}")
-    c5.metric("Tamaño", res.tamano or "—")
 
     for aviso in res.avisos:
         st.warning(aviso)
@@ -275,7 +265,7 @@ with tab_res:
                 height=520,
             )
         st.caption(
-            f"Horas base totales: **{res.total_base:,.2f} h** → tamaño **{res.tamano}** "
+            f"Horas base totales: **{res.total_base:,.2f} h** "
             f"→ factor de ajuste por volumen **{res.factor_volumen:.0%}**"
         )
 
@@ -357,11 +347,7 @@ with tab_param:
 
 
 with tab_tetapas:
-    st.caption(
-        "Porcentaje de esfuerzo de cada etapa, por tamaño de proyecto y grupo tecnológico "
-        "(Host, Java, Testing). El tamaño (PEQUEÑO/MEDIANO/GRANDE) se elige automáticamente "
-        "según las horas base totales."
-    )
+    st.caption("Porcentaje de esfuerzo de cada etapa, por grupo tecnológico (Host, Java, Testing).")
 
     st.subheader("Porcentajes por etapa (editable)")
     st.caption(
@@ -381,23 +367,7 @@ with tab_tetapas:
     )
     sumas = P.etapas.copy()
     sumas["Suma"] = sumas[list(ETAPAS.values())].sum(axis=1).round(3)
-    st.dataframe(sumas[["Tamaño", "Grupo", "Suma"]], hide_index=True, width="stretch")
-
-    st.divider()
-    st.subheader("Umbrales de tamaño de proyecto")
-    st.caption(
-        "Límite superior de horas base para cada tramo — determina qué bloque de la "
-        "tabla de arriba se aplica al calcular."
-    )
-    P.tamanos = st.data_editor(
-        P.tamanos,
-        width="stretch",
-        num_rows="dynamic",
-        column_config={
-            "LimiteSuperiorHoras": st.column_config.NumberColumn("Límite superior (h)", step=50)
-        },
-        key="editor_tamanos",
-    )
+    st.dataframe(sumas[["Grupo", "Suma"]], hide_index=True, width="stretch")
 
 
 with tab_timeline:
@@ -552,7 +522,6 @@ with tab_exp:
             {
                 "Concepto": [
                     "Total horas base",
-                    "Tamaño proyecto",
                     "Subtotal agrupaciones",
                     "Factor volumen",
                     "Ajuste complejidad",
@@ -561,7 +530,6 @@ with tab_exp:
                 ],
                 "Valor": [
                     res.total_base,
-                    res.tamano,
                     res.total_etapas,
                     res.factor_volumen,
                     res.ajuste_complejidad,

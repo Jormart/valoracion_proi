@@ -5,7 +5,7 @@ Modelo:
 
   1. Horas base de la tarea    = PESOS[tipo][variación_complejidad] * cantidad
   2. Horas por etapa           = ROUND(horas_base * %etapa_seleccionada, 2), por cada
-                                 una de las 5 etapas (TABLA ETAPAS: tamaño x grupo)
+                                 una de las 5 etapas (TABLA ETAPAS: por grupo)
   3. Horas de la tarea         = suma de sus columnas de etapa ya redondeadas
   4. Ajuste por complejidad    = ROUND(factor_volumen * total_etapas, 2)
   5. Total proyecto            = total_etapas + ajuste_complejidad + ajuste_manual
@@ -20,6 +20,10 @@ testing ligada a otra tarea mediante ClaveAgrupación — ver
 `resumen_por_clave`). Puede pertenecer a un grupo tecnológico (Host, Java,
 Testing) y a un Product Team (PT1, PT3, PT6...), y tener marcadas varias
 etapas a la vez.
+
+No hay clasificación de "tamaño de proyecto" (PEQUEÑO/MEDIANO/GRANDE): el
+trabajo se organiza en cadencias semanales, no en proyectos, así que ese eje
+no aportaba nada y se eliminó — TABLA ETAPAS tiene un único % por grupo.
 
 Todos los parámetros son datos, no constantes: se cargan de /data y pueden
 editarse desde la interfaz.
@@ -66,7 +70,6 @@ class Parametros:
     pesos: pd.DataFrame
     etapas: pd.DataFrame
     ajuste_volumen: pd.DataFrame
-    tamanos: pd.DataFrame
     equipos: pd.DataFrame
     capacidad: pd.DataFrame
     horas_semana: float = 40.0
@@ -74,7 +77,6 @@ class Parametros:
     horas_dia: float = 8.0
     ajuste_manual: float = 0.0
     desc_ajuste_manual: str = ""
-    tamano_forzado: str | None = None
 
     @classmethod
     def por_defecto(cls, data_dir: Path | str = DATA_DIR) -> "Parametros":
@@ -84,7 +86,6 @@ class Parametros:
             pesos=pd.read_csv(d / "pesos.csv"),
             etapas=pd.read_csv(d / "etapas.csv"),
             ajuste_volumen=pd.read_csv(d / "ajuste_volumen.csv"),
-            tamanos=pd.read_csv(d / "tamanos.csv"),
             equipos=pd.read_csv(d / "product_teams.csv"),
             capacidad=pd.read_csv(d / "capacidad.csv"),
             horas_semana=float(cfg["HorasSemana"]),
@@ -98,7 +99,6 @@ class Parametros:
         self.pesos.to_csv(d / "pesos.csv", index=False)
         self.etapas.to_csv(d / "etapas.csv", index=False)
         self.ajuste_volumen.to_csv(d / "ajuste_volumen.csv", index=False)
-        self.tamanos.to_csv(d / "tamanos.csv", index=False)
         self.equipos.to_csv(d / "product_teams.csv", index=False)
         self.capacidad.to_csv(d / "capacidad.csv", index=False)
         pd.DataFrame(
@@ -141,20 +141,10 @@ class Parametros:
             raise KeyError(f"Complejidad desconocida: {complejidad!r}")
         return float(fila.iloc[0][col])
 
-    def tamano_proyecto(self, horas_base_total: float) -> str:
-        """PEQUEÑO / MEDIANO / GRANDE según el total de horas base."""
-        if self.tamano_forzado:
-            return self.tamano_forzado
-        tab = self.tamanos.sort_values("LimiteSuperiorHoras")
-        for _, r in tab.iterrows():
-            if horas_base_total < float(r["LimiteSuperiorHoras"]):
-                return str(r["Tamaño"])
-        return str(tab.iloc[-1]["Tamaño"])
-
-    def porcentajes_etapa(self, tamano: str, grupo: str) -> dict[str, float]:
-        fila = self.etapas[(self.etapas["Tamaño"] == tamano) & (self.etapas["Grupo"] == grupo)]
+    def porcentajes_etapa(self, grupo: str) -> dict[str, float]:
+        fila = self.etapas[self.etapas["Grupo"] == grupo]
         if fila.empty:
-            raise KeyError(f"Sin porcentajes de etapa para {tamano!r} / {grupo!r}")
+            raise KeyError(f"Sin porcentajes de etapa para el grupo {grupo!r}")
         return {e: float(fila.iloc[0][e]) for e in ETAPAS.values()}
 
     def factor_volumen(self, horas_base_total: float) -> float:
@@ -199,7 +189,6 @@ class Resultado:
     ajuste_complejidad: float = 0.0
     ajuste_manual: float = 0.0
     total_proyecto: float = 0.0
-    tamano: str = ""
     avisos: list[str] = field(default_factory=list)
 
 
@@ -255,15 +244,13 @@ def calcular(elementos: pd.DataFrame, p: Parametros) -> Resultado:
     det = pd.DataFrame(filas)
     total_base = float(det["HorasBase"].sum())
 
-    tamano = p.tamano_proyecto(total_base)
-
     for etapa in cols_etapa:
         det[etapa] = 0.0
     det["%Etapas"] = 0.0
     det["Horas"] = 0.0
 
     for idx, r in det.iterrows():
-        pct = p.porcentajes_etapa(tamano, r["Grupo"])
+        pct = p.porcentajes_etapa(r["Grupo"])
         activas = r["EtapasActivas"]
         total_pct = 0.0
         for etapa in cols_etapa:
@@ -295,7 +282,6 @@ def calcular(elementos: pd.DataFrame, p: Parametros) -> Resultado:
         ajuste_complejidad=ajuste_compl,
         ajuste_manual=float(p.ajuste_manual),
         total_proyecto=total_proyecto,
-        tamano=tamano,
         avisos=avisos,
     )
 

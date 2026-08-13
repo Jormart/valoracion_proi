@@ -24,9 +24,8 @@ valoracion_proi/
 ├── requirements.txt
 └── data/                 # parámetros por defecto, todos editables desde la app
     ├── pesos.csv              # horas base por tipo de tarea × complejidad × variación
-    ├── etapas.csv             # % de esfuerzo por etapa, según tamaño de proyecto y grupo
+    ├── etapas.csv             # % de esfuerzo por etapa, según grupo tecnológico
     ├── ajuste_volumen.csv     # factor de ajuste por complejidad según horas totales
-    ├── tamanos.csv            # umbrales PEQUEÑO/MEDIANO/GRANDE
     ├── product_teams.csv      # lista de Product Teams (PT1, PT3, PT6...)
     ├── capacidad.csv          # FTEs fijos por Product Team y grupo tecnológico
     ├── capacidad_config.csv   # horas/semana, buffer de imprevistos, horas/día
@@ -64,7 +63,7 @@ volumen/complejidad y un ajuste manual.
 | 📊 Resultado | subtotales por grupo, por Product Team y por tarea; detalle fila a fila |
 | 🔩 Etapas | reparto de horas por etapa (mismo dato que Resultado, otro eje de agregación) |
 | ⚖️ Parámetros | tabla de pesos y ajuste por volumen, editables |
-| 📐 Tabla Etapas | % de esfuerzo por etapa, tamaño y grupo; umbrales de tamaño |
+| 📐 Tabla Etapas | % de esfuerzo por etapa, por grupo tecnológico |
 | 🗓️ Timeline | Gantt relativo: cada tarea como barra con sus etapas encadenadas en días |
 | ⚖️ Balanceo de carga | horas esperadas vs. capacidad disponible por Product Team, con holguras/desbordamientos |
 | ⬇️ Exportar | descarga del libro completo en Excel o el detalle en CSV |
@@ -81,10 +80,13 @@ confirma en cada recálculo.
   redondeo, y podían divergir (126.27 vs 126.27125 h en el caso de ejemplo).
   Aquí solo existe una tabla de detalle; todas las vistas son agregaciones
   de las mismas celdas ya redondeadas.
-- **Tamaño de proyecto dinámico.** El Excel tenía las fórmulas de % por
-  etapa fijadas siempre al bloque PEQUEÑO de `TABLA ETAPAS`, sin importar el
-  tamaño real calculado. Aquí el tamaño (PEQUEÑO/MEDIANO/GRANDE) se
-  recalcula según las horas base totales y selecciona el bloque correcto.
+- **Sin clasificación de tamaño de proyecto.** El Excel original tenía tres
+  bloques de % por etapa (PEQUEÑO/MEDIANO/GRANDE de `TABLA ETAPAS`), aunque
+  en la práctica sus fórmulas quedaban siempre fijadas al bloque PEQUEÑO. El
+  trabajo se organiza por cadencias semanales, no por proyectos, así que ese
+  eje no aportaba nada y se eliminó: `TABLA ETAPAS` tiene ahora un único %
+  por grupo tecnológico (se conservaron los valores que antes eran el
+  bloque PEQUEÑO, que es lo que el Excel aplicaba de facto).
 - **Etapas seleccionables por checkbox**, no por código de texto libre
   (`F+T+C+P+I`) — evita errores de escritura que antes se descartaban en
   silencio.
