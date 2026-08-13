@@ -1,21 +1,25 @@
 """
 Motor de cálculo de la valoración PROI.
 
-Réplica en Python de la lógica del libro Valoracion_PROI_v0.xlsm:
+Modelo:
 
-  1. Horas base del elemento  = PESOS[tipo][variación_complejidad] * cantidad
-  2. Horas por etapa          = ROUND(horas_base * %etapa_seleccionada, 2), por cada
-                                una de las 6 etapas (TABLA ETAPAS: tamaño x grupo)
-  3. Horas del elemento       = suma de sus 6 columnas de etapa ya redondeadas
-  4. Ajuste por complejidad   = ROUND(factor_volumen * total_etapas, 2)
-  5. Total proyecto           = total_etapas + ajuste_complejidad + ajuste_manual
+  1. Horas base de la tarea    = PESOS[tipo][variación_complejidad] * cantidad
+  2. Horas por etapa           = ROUND(horas_base * %etapa_seleccionada, 2), por cada
+                                 una de las 5 etapas (TABLA ETAPAS: tamaño x grupo)
+  3. Horas de la tarea         = suma de sus columnas de etapa ya redondeadas
+  4. Ajuste por complejidad    = ROUND(factor_volumen * total_etapas, 2)
+  5. Total proyecto            = total_etapas + ajuste_complejidad + ajuste_manual
 
-El detalle (`Resultado.detalle`) es la única fuente de verdad: tanto la vista
-"Resultado" (agrupada por Grupo tecnológico) como la vista "Etapas" (agrupada
-por etapa) se calculan a partir de las mismas filas ya redondeadas, así que
-sus totales siempre cuadran entre sí — a diferencia del libro Excel original,
-donde RESULTADO y ETAPAS mantenían copias independientes con distinto orden
-de redondeo y podían divergir (126.27 vs 126.27125 en el caso de ejemplo).
+El detalle (`Resultado.detalle`) es la única fuente de verdad: todas las vistas
+(por Grupo tecnológico, por etapa, por Product Team, timeline, capacidad) se
+calculan a partir de las mismas filas ya redondeadas, así que sus totales
+siempre cuadran entre sí.
+
+Cada fila de entrada es una historia de usuario / ticket de Jira (o una tarea
+extra de testing ligada a una historia mediante ClaveAgrupación — ver
+`resumen_por_clave`). Puede pertenecer a un grupo tecnológico (Host, Java,
+Testing) y a un Product Team (PT1, PT3, PT6...), y tener marcadas varias
+etapas a la vez.
 
 Todos los parámetros son datos, no constantes: se cargan de /data y pueden
 editarse desde la interfaz.
@@ -30,7 +34,6 @@ import pandas as pd
 DATA_DIR = Path(__file__).parent / "data"
 
 ETAPAS: dict[str, str] = {
-    "R": "Requisitos",
     "F": "Funcional",
     "T": "Técnico",
     "C": "Construcción",
@@ -48,6 +51,7 @@ COLUMNAS_ELEMENTOS = [
     "TipoElemento",
     "Complejidad",
     "Variación",
+    "ProductTeam",
     *ETAPAS.values(),
     "ClaveAgrupación",
     "DescripciónAgrupación",
@@ -63,6 +67,11 @@ class Parametros:
     etapas: pd.DataFrame
     ajuste_volumen: pd.DataFrame
     tamanos: pd.DataFrame
+    equipos: pd.DataFrame
+    capacidad: pd.DataFrame
+    horas_semana: float = 40.0
+    buffer_imprevistos: float = 0.20
+    horas_dia: float = 8.0
     ajuste_manual: float = 0.0
     desc_ajuste_manual: str = ""
     tamano_forzado: str | None = None
@@ -70,11 +79,17 @@ class Parametros:
     @classmethod
     def por_defecto(cls, data_dir: Path | str = DATA_DIR) -> "Parametros":
         d = Path(data_dir)
+        cfg = pd.read_csv(d / "capacidad_config.csv").iloc[0]
         return cls(
             pesos=pd.read_csv(d / "pesos.csv"),
             etapas=pd.read_csv(d / "etapas.csv"),
             ajuste_volumen=pd.read_csv(d / "ajuste_volumen.csv"),
             tamanos=pd.read_csv(d / "tamanos.csv"),
+            equipos=pd.read_csv(d / "product_teams.csv"),
+            capacidad=pd.read_csv(d / "capacidad.csv"),
+            horas_semana=float(cfg["HorasSemana"]),
+            buffer_imprevistos=float(cfg["BufferImprevistos"]),
+            horas_dia=float(cfg["HorasDia"]),
         )
 
     def guardar(self, data_dir: Path | str = DATA_DIR) -> None:
@@ -84,6 +99,17 @@ class Parametros:
         self.etapas.to_csv(d / "etapas.csv", index=False)
         self.ajuste_volumen.to_csv(d / "ajuste_volumen.csv", index=False)
         self.tamanos.to_csv(d / "tamanos.csv", index=False)
+        self.equipos.to_csv(d / "product_teams.csv", index=False)
+        self.capacidad.to_csv(d / "capacidad.csv", index=False)
+        pd.DataFrame(
+            [
+                {
+                    "HorasSemana": self.horas_semana,
+                    "BufferImprevistos": self.buffer_imprevistos,
+                    "HorasDia": self.horas_dia,
+                }
+            ]
+        ).to_csv(d / "capacidad_config.csv", index=False)
 
     @property
     def tipos_elemento(self) -> list[str]:
@@ -93,8 +119,12 @@ class Parametros:
     def grupos(self) -> list[str]:
         return self.etapas["Grupo"].drop_duplicates().tolist()
 
+    @property
+    def equipos_lista(self) -> list[str]:
+        return self.equipos["ProductTeam"].tolist()
+
     def grupo_de(self, tipo: str) -> str:
-        """Grupo tecnológico (Host, Java, SAP...) al que pertenece un tipo."""
+        """Grupo tecnológico (Host, Java, Testing) al que pertenece un tipo."""
         fila = self.pesos.loc[self.pesos["TipoElemento"] == tipo, "Grupo"]
         if fila.empty:
             raise KeyError(f"Tipo de elemento desconocido: {tipo!r}")
@@ -138,10 +168,19 @@ class Parametros:
                 break
         return factor
 
+    def fte(self, equipo: str, grupo: str) -> float:
+        """FTEs fijos asignados a un Product Team para un grupo tecnológico (0 si no hay)."""
+        fila = self.capacidad[(self.capacidad["ProductTeam"] == equipo) & (self.capacidad["Grupo"] == grupo)]
+        return float(fila.iloc[0]["FTE"]) if not fila.empty else 0.0
+
+    def horas_disponibles(self, equipo: str, grupo: str, semanas: float) -> float:
+        """Capacidad real disponible = FTE x horas/semana x (1 - buffer de imprevistos) x semanas."""
+        return round(self.fte(equipo, grupo) * self.horas_semana * (1 - self.buffer_imprevistos) * semanas, 2)
+
 
 def etapas_activas(fila) -> list[str]:
-    """Etapas marcadas (True) para un elemento, a partir de sus columnas checkbox
-    Requisitos/Funcional/Técnico/Construcción/Pruebas/Implantación."""
+    """Etapas marcadas (True) para una tarea, a partir de sus columnas checkbox
+    Funcional/Técnico/Construcción/Pruebas/Implantación."""
     return [e for e in ETAPAS.values() if pd.notna(fila.get(e)) and bool(fila.get(e))]
 
 
@@ -165,7 +204,7 @@ class Resultado:
 
 
 def calcular(elementos: pd.DataFrame, p: Parametros) -> Resultado:
-    """Calcula la valoración completa a partir de la lista de elementos."""
+    """Calcula la valoración completa a partir de la lista de historias de usuario."""
     avisos: list[str] = []
     filas = []
 
@@ -184,8 +223,11 @@ def calcular(elementos: pd.DataFrame, p: Parametros) -> Resultado:
         if not activas:
             avisos.append(
                 f"Fila {i + 1} ({r.get('Nombre', '')}): sin ninguna etapa marcada "
-                f"— el elemento no aportará horas."
+                f"— la tarea no aportará horas."
             )
+        equipo = str(r.get("ProductTeam") or "").strip()
+        if not equipo:
+            avisos.append(f"Fila {i + 1} ({r.get('Nombre', '')}): sin Product Team asignado.")
         filas.append(
             {
                 "Nombre": r.get("Nombre", ""),
@@ -193,6 +235,7 @@ def calcular(elementos: pd.DataFrame, p: Parametros) -> Resultado:
                 "Grupo": grupo,
                 "Complejidad": r["Complejidad"],
                 "Variación": r["Variación"],
+                "ProductTeam": equipo,
                 "Etapas": etapas_como_codigo(activas),
                 "EtapasActivas": activas,
                 "ClaveAgrupación": r.get("ClaveAgrupación", ""),
@@ -204,7 +247,9 @@ def calcular(elementos: pd.DataFrame, p: Parametros) -> Resultado:
 
     cols_etapa = list(ETAPAS.values())
     if not filas:
-        vacio = pd.DataFrame(columns=["Nombre", "Grupo", "HorasBase", "%Etapas", "Horas"] + cols_etapa)
+        vacio = pd.DataFrame(
+            columns=["Nombre", "Grupo", "ProductTeam", "HorasBase", "%Etapas", "Horas"] + cols_etapa
+        )
         return Resultado(detalle=vacio, por_etapa=pd.DataFrame(columns=["Grupo"] + cols_etapa), avisos=avisos)
 
     det = pd.DataFrame(filas)
@@ -224,8 +269,8 @@ def calcular(elementos: pd.DataFrame, p: Parametros) -> Resultado:
         for etapa in cols_etapa:
             v = pct[etapa] if etapa in activas else 0.0
             # Redondeado aquí (no al calcular "Horas" por separado) para que la suma
-            # de las columnas de etapa siempre reconstruya exactamente el total del
-            # elemento: evita el descuadre que tenía el Excel entre RESULTADO y ETAPAS.
+            # de las columnas de etapa siempre reconstruya exactamente el total de
+            # la tarea: evita el descuadre que tenía el Excel entre RESULTADO y ETAPAS.
             det.at[idx, etapa] = round(r["HorasBase"] * v, 2)
             total_pct += v
         det.at[idx, "%Etapas"] = total_pct
@@ -256,11 +301,103 @@ def calcular(elementos: pd.DataFrame, p: Parametros) -> Resultado:
 
 
 def resumen_agrupaciones(res: Resultado) -> pd.DataFrame:
-    """Equivalente a la hoja RESULTADO: subtotales por grupo tecnológico."""
+    """Subtotales por grupo tecnológico."""
     if res.detalle.empty:
         return pd.DataFrame(columns=["Grupo", "Horas"])
     g = res.detalle.groupby("Grupo", as_index=False)["Horas"].sum().round(2)
     return g.sort_values("Horas", ascending=False, ignore_index=True)
+
+
+def resumen_por_equipo(res: Resultado) -> pd.DataFrame:
+    """Horas esperadas por Product Team y grupo tecnológico."""
+    if res.detalle.empty:
+        return pd.DataFrame(columns=["ProductTeam", "Grupo", "Horas"])
+    g = res.detalle.groupby(["ProductTeam", "Grupo"], as_index=False)["Horas"].sum().round(2)
+    return g.sort_values(["ProductTeam", "Grupo"], ignore_index=True)
+
+
+def resumen_por_clave(res: Resultado) -> pd.DataFrame:
+    """Agrupa filas que comparten ClaveAgrupación (p. ej. una historia de usuario y
+    sus tareas extra de testing — Análisis, Regresión, Incidencias, Defects) para ver
+    el total real de esa historia."""
+    columnas = ["ClaveAgrupación", "Elementos", "Horas"]
+    if res.detalle.empty:
+        return pd.DataFrame(columns=columnas)
+    clave = res.detalle["ClaveAgrupación"]
+    con_clave = res.detalle[clave.notna() & (clave.astype(str).str.strip() != "")]
+    if con_clave.empty:
+        return pd.DataFrame(columns=columnas)
+    g = (
+        con_clave.groupby("ClaveAgrupación")
+        .agg(Elementos=("TipoElemento", lambda s: ", ".join(s)), Horas=("Horas", "sum"))
+        .round({"Horas": 2})
+        .reset_index()
+    )
+    return g.sort_values("Horas", ascending=False, ignore_index=True)
+
+
+def calcular_capacidad(res: Resultado, p: Parametros, semanas: float) -> pd.DataFrame:
+    """Compara horas esperadas (asignadas a cada Product Team/Grupo) contra las horas
+    disponibles según su FTE fijo, para un horizonte de `semanas`.
+
+    Holgura = HorasDisponibles - HorasEsperadas.
+    Holgura negativa = desbordamiento (más trabajo asignado que capacidad real)."""
+    esperadas = resumen_por_equipo(res)
+    grupos = sorted(p.capacidad["Grupo"].drop_duplicates().tolist())
+    filas = []
+    for equipo in p.equipos_lista:
+        for grupo in grupos:
+            horas_esp = float(
+                esperadas.loc[
+                    (esperadas["ProductTeam"] == equipo) & (esperadas["Grupo"] == grupo), "Horas"
+                ].sum()
+            )
+            horas_disp = p.horas_disponibles(equipo, grupo, semanas)
+            filas.append(
+                {
+                    "ProductTeam": equipo,
+                    "Grupo": grupo,
+                    "FTE": p.fte(equipo, grupo),
+                    "HorasEsperadas": round(horas_esp, 2),
+                    "HorasDisponibles": horas_disp,
+                    "Holgura": round(horas_disp - horas_esp, 2),
+                }
+            )
+    return pd.DataFrame(filas)
+
+
+def construir_timeline(res: Resultado, p: Parametros) -> pd.DataFrame:
+    """Gantt relativo: cada fila del detalle es una barra propia que arranca en el
+    día 0 y encadena sus etapas activas en secuencia (Funcional -> ... -> Implantación).
+    Posición relativa en días de trabajo, no fechas de calendario reales."""
+    columnas = ["ProductTeam", "Etiqueta", "Etapa", "Inicio", "Fin", "Horas"]
+    cols_etapa = list(ETAPAS.values())
+    if res.detalle.empty:
+        return pd.DataFrame(columns=columnas)
+
+    filas = []
+    detalle = res.detalle.sort_values(["ProductTeam", "Nombre"], kind="stable")
+    for _, r in detalle.iterrows():
+        dia = 0.0
+        nombre = str(r["Nombre"]).strip()
+        etiqueta = f"{nombre} · {r['TipoElemento']}" if nombre else str(r["TipoElemento"])
+        for etapa in cols_etapa:
+            horas_etapa = float(r[etapa])
+            if horas_etapa <= 0:
+                continue
+            duracion = round(horas_etapa / p.horas_dia, 2)
+            filas.append(
+                {
+                    "ProductTeam": r.get("ProductTeam") or "(sin asignar)",
+                    "Etiqueta": etiqueta,
+                    "Etapa": etapa,
+                    "Inicio": dia,
+                    "Fin": dia + duracion,
+                    "Horas": horas_etapa,
+                }
+            )
+            dia += duracion
+    return pd.DataFrame(filas, columns=columnas)
 
 
 @dataclass
